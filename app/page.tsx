@@ -1,7 +1,8 @@
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-black">
-      <h1 className="text-5xl font-bold text-white">Hola Mundo</h1>
-    </div>
-  );
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+
+export default async function RootPage() {
+  const session = await auth();
+  if (session) redirect("/home");
+  redirect("/login");
 }
