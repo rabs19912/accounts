@@ -1,12 +1,10 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { AddExpenseModal } from "@/components/groups/AddExpenseModal";
-import { AddLoanModal } from "@/components/groups/AddLoanModal";
 import { DeleteExpenseButton } from "@/components/groups/DeleteExpenseButton";
 import { DeleteLoanButton } from "@/components/groups/DeleteLoanButton";
 import { DeleteGroupButton } from "@/components/groups/DeleteGroupButton";
-import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { AddItemFAB } from "@/components/groups/AddItemFAB";
 
 function getInitials(name: string) {
   return name
@@ -98,19 +96,9 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
         : "bg-gray-50 border-gray-100 text-gray-600";
 
   return (
-    <div className="flex min-h-screen flex-col bg-sky-50">
-      <DashboardHeader
-        backHref="/home"
-        title={group.name}
-        actions={
-          <>
-            <AddLoanModal groupId={group.id} otherMember={otherMember} />
-            <AddExpenseModal groupId={group.id} />
-          </>
-        }
-      />
-
-      <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-8">
+    <div className="relative">
+      <div className="mx-auto w-full max-w-2xl px-6 py-8">
+        <h1 className="mb-6 text-xl font-semibold text-gray-900">{group.name}</h1>
 
         {/* Cards de resumen */}
         <div className="mb-6 grid grid-cols-3 gap-3">
@@ -286,10 +274,12 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
           )}
         </div>
 
-        <div className="border-t border-gray-200 pt-6">
+        <div className="border-t border-gray-200 pt-6 pb-24">
           <DeleteGroupButton groupId={group.id} hasPendingDeletion={hasPendingDeletion} />
         </div>
-      </main>
+      </div>
+
+      <AddItemFAB groupId={group.id} otherMember={otherMember} />
     </div>
   );
 }

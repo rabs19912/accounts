@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { respondInvitationAction, dismissNotificationAction } from "@/app/actions/invitations";
 import { respondGroupDeletionAction } from "@/app/actions/groups";
 
@@ -31,6 +32,7 @@ const POLL_INTERVAL = 15_000;
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [responding, setResponding] = useState<string | null>(null);
+  const router = useRouter();
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -47,7 +49,11 @@ export function useNotifications() {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  async function respondInvitation(invitationId: string, notificationId: string, action: "accept" | "reject") {
+  async function respondInvitation(
+    invitationId: string,
+    notificationId: string,
+    action: "accept" | "reject"
+  ) {
     setResponding(notificationId);
     const result = await respondInvitationAction(invitationId, action);
     if (result?.error) {
@@ -55,10 +61,15 @@ export function useNotifications() {
       return { error: result.error };
     }
     await fetchNotifications();
+    router.refresh();
     setResponding(null);
   }
 
-  async function respondGroupDeletion(notificationId: string, groupId: string, action: "accept" | "reject") {
+  async function respondGroupDeletion(
+    notificationId: string,
+    groupId: string,
+    action: "accept" | "reject"
+  ) {
     setResponding(notificationId);
     const result = await respondGroupDeletionAction(notificationId, groupId, action);
     if (result?.error) {
@@ -66,12 +77,14 @@ export function useNotifications() {
       return { error: result.error };
     }
     await fetchNotifications();
+    router.refresh();
     setResponding(null);
   }
 
   async function dismiss(notificationId: string) {
     await dismissNotificationAction(notificationId);
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    router.refresh();
   }
 
   return { notifications, responding, respondInvitation, respondGroupDeletion, dismiss };
