@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { useState } from "react";
 
 export function LoginForm() {
@@ -37,6 +38,14 @@ export function LoginForm() {
         <CardTitle className="text-lg">Iniciar sesión</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-4">
+          <GoogleButton />
+        </div>
+        <div className="relative mb-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">o</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>

@@ -11,7 +11,8 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String
-  password  String
+  password  String?
+  mpAlias   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -22,7 +23,9 @@ model User {
   sentInvitations   Invitation[]
   loansGiven        Loan[]         @relation("LoanFrom")
   loansReceived     Loan[]         @relation("LoanTo")
-  notifications     Notification[]
+  notifications        Notification[]
+  settlementsPaid      Settlement[]   @relation("SettlementPaidBy")
+  settlementsReceived  Settlement[]   @relation("SettlementReceivedBy")
 }
 
 model Group {
@@ -34,6 +37,7 @@ model Group {
   expenses      Expense[]
   loans         Loan[]
   notifications Notification[]
+  settlements   Settlement[]
 }
 
 model GroupMember {
@@ -48,16 +52,18 @@ model GroupMember {
 }
 
 model Expense {
-  id        String    @id @default(cuid())
-  groupId   String
-  userId    String
-  name      String
-  price     Decimal   @db.Decimal(10, 2)
-  date      DateTime?
-  createdAt DateTime  @default(now())
+  id           String    @id @default(cuid())
+  groupId      String
+  userId       String
+  name         String
+  price        Decimal   @db.Decimal(10, 2)
+  date         DateTime?
+  settlementId String?
+  createdAt    DateTime  @default(now())
 
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group      Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  settlement Settlement? @relation(fields: [settlementId], references: [id])
 }
 
 model Loan {
@@ -70,9 +76,27 @@ model Loan {
   date       DateTime?
   createdAt  DateTime  @default(now())
 
-  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  fromUser User  @relation("LoanFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUser   User  @relation("LoanTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  settlementId String?
+
+  group      Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromUser   User        @relation("LoanFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User        @relation("LoanTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  settlement Settlement? @relation(fields: [settlementId], references: [id])
+}
+
+model Settlement {
+  id           String   @id @default(cuid())
+  groupId      String
+  paidById     String
+  receivedById String
+  amount       Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now())
+
+  group      Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  paidBy     User      @relation("SettlementPaidBy", fields: [paidById], references: [id], onDelete: Cascade)
+  receivedBy User      @relation("SettlementReceivedBy", fields: [receivedById], references: [id], onDelete: Cascade)
+  expenses   Expense[]
+  loans      Loan[]
 }
 
 enum NotificationType {
