@@ -1,14 +1,45 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useCreateGroup } from "@/hooks/useCreateGroup";
+import { sendInvitationAction } from "@/app/actions/invitations";
 
 type User = { id: string; name: string; email: string };
+type Status = "idle" | "pending" | "success" | "error";
 
 export function CreateGroupModal({ users }: { users: User[] }) {
-  const { open, setOpen, mode, setMode, status, error, sentTo, close, submit } =
-    useCreateGroup();
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<Status>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [inviteeName, setInviteeName] = useState<string | null>(null);
+
+  function close() {
+    setOpen(false);
+    setTimeout(() => {
+      setStatus("idle");
+      setError(null);
+      setInviteeName(null);
+    }, 300);
+  }
+
+  async function handleSubmit(formData: FormData) {
+    setStatus("pending");
+    setError(null);
+
+    const userId = formData.get("userId") as string;
+    const selected = users.find((u) => u.id === userId);
+
+    const result = await sendInvitationAction(formData);
+
+    if (result?.error) {
+      setError(result.error);
+      setStatus("error");
+      return;
+    }
+
+    setInviteeName(selected?.name ?? null);
+    setStatus("success");
+  }
 
   if (!open) {
     return (
@@ -25,15 +56,13 @@ export function CreateGroupModal({ users }: { users: User[] }) {
     >
       <div className="w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-lg">
         {status === "success" ? (
-          <SuccessState email={sentTo!} onClose={close} />
+          <SuccessState name={inviteeName!} onClose={close} />
         ) : (
           <FormState
             users={users}
-            mode={mode}
-            setMode={setMode}
             error={error}
             pending={status === "pending"}
-            onSubmit={submit}
+            onSubmit={handleSubmit}
             onClose={close}
           />
         )}
@@ -42,7 +71,7 @@ export function CreateGroupModal({ users }: { users: User[] }) {
   );
 }
 
-function SuccessState({ email, onClose }: { email: string; onClose: () => void }) {
+function SuccessState({ name, onClose }: { name: string; onClose: () => void }) {
   return (
     <div className="text-center">
       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
@@ -52,8 +81,9 @@ function SuccessState({ email, onClose }: { email: string; onClose: () => void }
       </div>
       <h2 className="mb-1 text-base font-semibold text-foreground">Invitación enviada</h2>
       <p className="mb-5 text-sm text-muted-foreground">
-        Le mandamos un email a <span className="font-medium text-foreground">{email}</span> con
-        el link para aceptar.
+        Le enviamos una notificación a{" "}
+        <span className="font-medium text-foreground">{name}</span>. Cuando acepte, el grupo
+        se va a crear automáticamente.
       </p>
       <Button size="sm" onClick={onClose} className="w-full">
         Cerrar
@@ -62,17 +92,19 @@ function SuccessState({ email, onClose }: { email: string; onClose: () => void }
   );
 }
 
-interface FormStateProps {
+function FormState({
+  users,
+  error,
+  pending,
+  onSubmit,
+  onClose,
+}: {
   users: User[];
-  mode: "select" | "email";
-  setMode: (m: "select" | "email") => void;
   error: string | null;
   pending: boolean;
   onSubmit: (formData: FormData) => void;
   onClose: () => void;
-}
-
-function FormState({ users, mode, setMode, error, pending, onSubmit, onClose }: FormStateProps) {
+}) {
   return (
     <>
       <h2 className="mb-1 text-base font-semibold text-foreground">Crear grupo</h2>
@@ -80,36 +112,29 @@ function FormState({ users, mode, setMode, error, pending, onSubmit, onClose }: 
         Invitá a alguien para compartir gastos
       </p>
 
-      <div className="mb-4 flex rounded-lg border border-border p-0.5">
-        <button
-          type="button"
-          onClick={() => setMode("select")}
-          className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-colors ${
-            mode === "select"
-              ? "bg-foreground text-background"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Usuario registrado
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("email")}
-          className={`flex-1 rounded-md py-1.5 text-xs font-medium transition-colors ${
-            mode === "email"
-              ? "bg-foreground text-background"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Invitar por email
-        </button>
-      </div>
-
       <form action={onSubmit}>
-        {mode === "select" ? (
-          <SelectMode users={users} />
+        <label className="mb-1 block text-xs text-foreground/70" htmlFor="user-select">
+          Seleccioná un usuario
+        </label>
+
+        {users.length === 0 ? (
+          <p className="mb-4 text-xs text-muted-foreground">
+            No hay otros usuarios registrados todavía.
+          </p>
         ) : (
-          <EmailMode />
+          <select
+            id="user-select"
+            name="userId"
+            required
+            className="mb-4 h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <option value="">Elegí un usuario…</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
         )}
 
         {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
@@ -118,58 +143,11 @@ function FormState({ users, mode, setMode, error, pending, onSubmit, onClose }: 
           <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={pending}>
             Cancelar
           </Button>
-          <Button type="submit" size="sm" disabled={pending}>
+          <Button type="submit" size="sm" disabled={pending || users.length === 0}>
             {pending ? "Enviando…" : "Enviar invitación"}
           </Button>
         </div>
       </form>
     </>
-  );
-}
-
-function SelectMode({ users }: { users: User[] }) {
-  return (
-    <div className="mb-4">
-      <label className="mb-1 block text-xs text-foreground/70" htmlFor="user-select">
-        Seleccioná un usuario
-      </label>
-      {users.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No hay otros usuarios registrados.</p>
-      ) : (
-        <select
-          id="user-select"
-          name="email"
-          required
-          className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <option value="">Elegí un usuario…</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.email}>
-              {u.name} — {u.email}
-            </option>
-          ))}
-        </select>
-      )}
-    </div>
-  );
-}
-
-function EmailMode() {
-  return (
-    <div className="mb-4">
-      <label className="mb-1 block text-xs text-foreground/70" htmlFor="email-input">
-        Email
-      </label>
-      <Input
-        id="email-input"
-        name="email"
-        type="email"
-        placeholder="juan@ejemplo.com"
-        required
-      />
-      <p className="mt-1.5 text-xs text-muted-foreground">
-        Si no tiene cuenta, el link lo va a llevar a registrarse primero.
-      </p>
-    </div>
   );
 }

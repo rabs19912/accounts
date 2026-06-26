@@ -1,7 +1,7 @@
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { Button } from "@/components/ui/button";
 import { CreateGroupModal } from "@/components/groups/CreateGroupModal";
+import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import Link from "next/link";
 
 function getInitials(name: string) {
@@ -61,21 +61,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-sky-50">
-      <header className="border-b bg-white px-6 py-4 shadow-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <h1 className="text-xl font-bold text-sky-600">Accounts</h1>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/login" });
-            }}
-          >
-            <Button variant="ghost" size="sm" type="submit">
-              Cerrar sesión
-            </Button>
-          </form>
-        </div>
-      </header>
+      <DashboardHeader />
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
         <div className="mb-8">

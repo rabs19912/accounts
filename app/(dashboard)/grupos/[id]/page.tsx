@@ -1,13 +1,12 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { AddExpenseModal } from "@/components/groups/AddExpenseModal";
 import { AddLoanModal } from "@/components/groups/AddLoanModal";
 import { DeleteExpenseButton } from "@/components/groups/DeleteExpenseButton";
 import { DeleteLoanButton } from "@/components/groups/DeleteLoanButton";
 import { DeleteGroupButton } from "@/components/groups/DeleteGroupButton";
+import { DashboardHeader } from "@/components/layout/DashboardHeader";
 
 function getInitials(name: string) {
   return name
@@ -98,24 +97,16 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="flex min-h-screen flex-col bg-sky-50">
-      <header className="border-b bg-white px-6 py-4 shadow-sm">
-        <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/home">
-              <Button variant="ghost" size="icon">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Button>
-            </Link>
-            <h1 className="text-base font-semibold text-gray-900">{group.name}</h1>
-          </div>
-          <div className="flex items-center gap-2">
+      <DashboardHeader
+        backHref="/home"
+        title={group.name}
+        actions={
+          <>
             <AddLoanModal groupId={group.id} otherMember={otherMember} />
             <AddExpenseModal groupId={group.id} />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-8">
 
