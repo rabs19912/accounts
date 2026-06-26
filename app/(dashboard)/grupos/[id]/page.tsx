@@ -172,7 +172,6 @@ export default async function GroupPage({
           <SettlementHistory
             settlements={settlementsForHistory}
             currentUserId={userId}
-            formatCurrency={formatCurrency}
           />
         ) : (
           <>
@@ -226,7 +225,6 @@ export default async function GroupPage({
                 balance={balanceTotal}
                 creditorName={creditorMember.user.name}
                 creditorAlias={creditorMember.user.mpAlias ?? null}
-                formatCurrency={formatCurrency}
               />
             )}
 

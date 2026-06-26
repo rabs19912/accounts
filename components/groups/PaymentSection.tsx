@@ -11,7 +11,14 @@ interface Props {
   balance: number;
   creditorName: string;
   creditorAlias: string | null;
-  formatCurrency: (n: number) => string;
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+  }).format(amount);
 }
 
 export function PaymentSection({
@@ -19,7 +26,6 @@ export function PaymentSection({
   balance,
   creditorName,
   creditorAlias,
-  formatCurrency,
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [pending, setPending] = useState(false);

@@ -10,11 +10,13 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  name      String
-  password  String?
-  mpAlias   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  name          String
+  password      String?
+  mpAlias       String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   accounts          Account[]
   sessions          Session[]

@@ -25,7 +25,14 @@ interface Settlement {
 interface Props {
   settlements: Settlement[];
   currentUserId: string;
-  formatCurrency: (n: number) => string;
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+  }).format(amount);
 }
 
 function formatDate(dateStr: string) {
@@ -42,7 +49,7 @@ function formatMonth(dateStr: string) {
     .replace(".", "");
 }
 
-export function SettlementHistory({ settlements, currentUserId, formatCurrency }: Props) {
+export function SettlementHistory({ settlements, currentUserId }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(
     settlements[0]?.id ?? null
   );
