@@ -20,6 +20,8 @@ model User {
   groupMembers      GroupMember[]
   expenses          Expense[]
   sentInvitations   Invitation[]
+  loansGiven        Loan[]        @relation("LoanFrom")
+  loansReceived     Loan[]        @relation("LoanTo")
 }
 
 model Group {
@@ -29,6 +31,7 @@ model Group {
 
   members  GroupMember[]
   expenses Expense[]
+  loans    Loan[]
 }
 
 model GroupMember {
@@ -53,6 +56,21 @@ model Expense {
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Loan {
+  id         String    @id @default(cuid())
+  groupId    String
+  fromUserId String
+  toUserId   String
+  name       String
+  amount     Decimal   @db.Decimal(10, 2)
+  date       DateTime?
+  createdAt  DateTime  @default(now())
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromUser User  @relation("LoanFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User  @relation("LoanTo", fields: [toUserId], references: [id], onDelete: Cascade)
 }
 
 enum InvitationStatus {
