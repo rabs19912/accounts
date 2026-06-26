@@ -15,8 +15,43 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts Account[]
-  sessions Session[]
+  accounts     Account[]
+  sessions     Session[]
+  groupMembers GroupMember[]
+  expenses     Expense[]
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  members  GroupMember[]
+  expenses Expense[]
+}
+
+model GroupMember {
+  id      String @id @default(cuid())
+  groupId String
+  userId  String
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model Expense {
+  id        String    @id @default(cuid())
+  groupId   String
+  userId    String
+  name      String
+  price     Decimal   @db.Decimal(10, 2)
+  date      DateTime?
+  createdAt DateTime  @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {
