@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AddExpenseModal } from "@/components/groups/AddExpenseModal";
+import { DeleteExpenseButton } from "@/components/groups/DeleteExpenseButton";
+import { DeleteGroupButton } from "@/components/groups/DeleteGroupButton";
 
 function getInitials(name: string) {
   return name
@@ -84,24 +86,16 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
           <div className="flex items-center gap-3">
             <Link href="/home">
               <Button variant="ghost" size="icon">
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </Button>
             </Link>
             <h1 className="text-base font-semibold text-gray-900">{group.name}</h1>
           </div>
-          <AddExpenseModal groupId={group.id} />
+          <div className="flex items-center gap-2">
+            <AddExpenseModal groupId={group.id} />
+          </div>
         </div>
       </header>
 
@@ -127,9 +121,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
                 <div className="flex items-center gap-2">
                   <div
                     className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium ${
-                      m.id === userId
-                        ? "bg-sky-100 text-sky-700"
-                        : "bg-emerald-100 text-emerald-700"
+                      m.id === userId ? "bg-sky-100 text-sky-700" : "bg-emerald-100 text-emerald-700"
                     }`}
                   >
                     {getInitials(m.name)}
@@ -139,19 +131,15 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
                   </span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">
-                    {formatCurrency(m.spent)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    parte: {formatCurrency(share)}
-                  </p>
+                  <p className="text-sm font-medium text-gray-900">{formatCurrency(m.spent)}</p>
+                  <p className="text-xs text-muted-foreground">parte: {formatCurrency(share)}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div>
+        <div className="mb-8">
           <p className="mb-3 text-xs font-medium text-muted-foreground">
             Gastos ({group.expenses.length})
           </p>
@@ -167,7 +155,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
               {group.expenses.map((expense) => (
                 <div
                   key={expense.id}
-                  className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3"
+                  className="group flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3"
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -186,13 +174,24 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
                       </p>
                     </div>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {formatCurrency(Number(expense.price))}
-                  </p>
+                  <div className="flex items-center">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {formatCurrency(Number(expense.price))}
+                    </p>
+                    <DeleteExpenseButton
+                      expenseId={expense.id}
+                      groupId={group.id}
+                      isOwner={expense.userId === userId}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+
+        <div className="border-t border-gray-200 pt-6">
+          <DeleteGroupButton groupId={group.id} />
         </div>
       </main>
     </div>

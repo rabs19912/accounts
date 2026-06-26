@@ -59,3 +59,28 @@ export async function addExpenseAction(formData: FormData) {
 
   revalidatePath(`/grupos/${groupId}`);
 }
+
+export async function deleteExpenseAction(expenseId: string, groupId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "No autenticado" };
+
+  const expense = await db.expense.findUnique({ where: { id: expenseId } });
+  if (!expense) return { error: "Gasto no encontrado" };
+  if (expense.userId !== session.user.id) return { error: "Solo podés eliminar tus propios gastos" };
+
+  await db.expense.delete({ where: { id: expenseId } });
+  revalidatePath(`/grupos/${groupId}`);
+}
+
+export async function deleteGroupAction(groupId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "No autenticado" };
+
+  const isMember = await db.groupMember.findUnique({
+    where: { groupId_userId: { groupId, userId: session.user.id } },
+  });
+  if (!isMember) return { error: "No pertenecés a este grupo" };
+
+  await db.group.delete({ where: { id: groupId } });
+  redirect("/home");
+}
