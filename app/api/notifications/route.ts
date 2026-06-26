@@ -12,6 +12,7 @@ export async function GET() {
       invitation: {
         include: { inviter: { select: { id: true, name: true } } },
       },
+      group: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: "desc" },
   });

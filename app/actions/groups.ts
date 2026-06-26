@@ -72,15 +72,80 @@ export async function deleteExpenseAction(expenseId: string, groupId: string) {
   revalidatePath(`/grupos/${groupId}`);
 }
 
-export async function deleteGroupAction(groupId: string) {
+export async function requestGroupDeletionAction(groupId: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "No autenticado" };
 
-  const isMember = await db.groupMember.findUnique({
-    where: { groupId_userId: { groupId, userId: session.user.id } },
+  const group = await db.group.findUnique({
+    where: { id: groupId },
+    include: { members: true, notifications: { where: { type: "GROUP_DELETE_REQUEST" } } },
   });
+  if (!group) return { error: "Grupo no encontrado" };
+
+  const isMember = group.members.some((m) => m.userId === session.user!.id);
   if (!isMember) return { error: "No pertenecés a este grupo" };
 
-  await db.group.delete({ where: { id: groupId } });
-  redirect("/home");
+  if (group.notifications.length > 0) return { error: "Ya hay una solicitud de eliminación pendiente" };
+
+  const otherMemberId = group.members.find((m) => m.userId !== session.user!.id)?.userId;
+  if (!otherMemberId) return { error: "No se encontró al otro miembro" };
+
+  await db.notification.create({
+    data: {
+      userId: otherMemberId,
+      type: "GROUP_DELETE_REQUEST",
+      groupId,
+    },
+  });
+
+  revalidatePath(`/grupos/${groupId}`);
+}
+
+export async function cancelGroupDeletionAction(groupId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "No autenticado" };
+
+  await db.notification.deleteMany({
+    where: { groupId, type: "GROUP_DELETE_REQUEST" },
+  });
+
+  revalidatePath(`/grupos/${groupId}`);
+}
+
+export async function respondGroupDeletionAction(
+  notificationId: string,
+  groupId: string,
+  response: "accept" | "reject"
+) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "No autenticado" };
+
+  const notification = await db.notification.findUnique({
+    where: { id: notificationId },
+    include: { group: { include: { members: true } } },
+  });
+  if (!notification?.group) return { error: "Notificación no encontrada" };
+
+  const requesterId = notification.group.members.find(
+    (m) => m.userId !== session.user!.id
+  )?.userId;
+
+  await db.notification.delete({ where: { id: notificationId } });
+
+  if (response === "accept") {
+    if (requesterId) {
+      await db.notification.create({
+        data: { userId: requesterId, type: "GROUP_DELETE_ACCEPTED", groupId },
+      });
+    }
+    await db.group.delete({ where: { id: groupId } });
+    redirect("/home");
+  } else {
+    if (requesterId) {
+      await db.notification.create({
+        data: { userId: requesterId, type: "GROUP_DELETE_REJECTED", groupId },
+      });
+    }
+    return { success: true };
+  }
 }

@@ -30,9 +30,10 @@ model Group {
   name      String
   createdAt DateTime @default(now())
 
-  members  GroupMember[]
-  expenses Expense[]
-  loans    Loan[]
+  members       GroupMember[]
+  expenses      Expense[]
+  loans         Loan[]
+  notifications Notification[]
 }
 
 model GroupMember {
@@ -78,6 +79,9 @@ enum NotificationType {
   INVITATION_RECEIVED
   INVITATION_ACCEPTED
   INVITATION_REJECTED
+  GROUP_DELETE_REQUEST
+  GROUP_DELETE_ACCEPTED
+  GROUP_DELETE_REJECTED
 }
 
 model Notification {
@@ -85,10 +89,12 @@ model Notification {
   userId       String
   type         NotificationType
   invitationId String?
+  groupId      String?
   createdAt    DateTime         @default(now())
 
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   invitation Invitation? @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  group      Group?      @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }
 
 enum InvitationStatus {

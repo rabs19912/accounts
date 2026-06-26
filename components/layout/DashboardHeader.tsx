@@ -1,6 +1,7 @@
 import { auth, signOut } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { LogOut, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
 interface Props {
@@ -10,18 +11,14 @@ interface Props {
 }
 
 export async function DashboardHeader({ backHref, title, actions }: Props) {
-  const session = await auth();
-
   return (
     <header className="border-b bg-white px-6 py-4 shadow-sm">
       <div className="mx-auto flex max-w-4xl items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {backHref ? (
             <Link href={backHref}>
               <Button variant="ghost" size="icon">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <ChevronLeft className="h-4 w-4" />
               </Button>
             </Link>
           ) : (
@@ -32,7 +29,7 @@ export async function DashboardHeader({ backHref, title, actions }: Props) {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {actions}
           <NotificationBell />
           {!backHref && (
@@ -42,8 +39,8 @@ export async function DashboardHeader({ backHref, title, actions }: Props) {
                 await signOut({ redirectTo: "/login" });
               }}
             >
-              <Button variant="ghost" size="sm" type="submit">
-                Cerrar sesión
+              <Button variant="ghost" size="icon" type="submit" aria-label="Cerrar sesión">
+                <LogOut className="h-4 w-4" />
               </Button>
             </form>
           )}

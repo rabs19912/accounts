@@ -2,15 +2,20 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { respondInvitationAction, dismissNotificationAction } from "@/app/actions/invitations";
+import { respondGroupDeletionAction } from "@/app/actions/groups";
 
 export type NotificationType =
   | "INVITATION_RECEIVED"
   | "INVITATION_ACCEPTED"
-  | "INVITATION_REJECTED";
+  | "INVITATION_REJECTED"
+  | "GROUP_DELETE_REQUEST"
+  | "GROUP_DELETE_ACCEPTED"
+  | "GROUP_DELETE_REJECTED";
 
 export interface Notification {
   id: string;
   type: NotificationType;
+  groupId: string | null;
   createdAt: string;
   invitation: {
     id: string;
@@ -18,6 +23,7 @@ export interface Notification {
     groupId: string | null;
     inviter: { id: string; name: string };
   } | null;
+  group: { id: string; name: string } | null;
 }
 
 const POLL_INTERVAL = 15_000;
@@ -31,7 +37,7 @@ export function useNotifications() {
       const res = await fetch("/api/notifications", { cache: "no-store" });
       if (res.ok) setNotifications(await res.json());
     } catch {
-      // red issue — silencio, no interrumpir al usuario
+      // red issue — silencio
     }
   }, []);
 
@@ -41,9 +47,20 @@ export function useNotifications() {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  async function respond(invitationId: string, notificationId: string, action: "accept" | "reject") {
+  async function respondInvitation(invitationId: string, notificationId: string, action: "accept" | "reject") {
     setResponding(notificationId);
     const result = await respondInvitationAction(invitationId, action);
+    if (result?.error) {
+      setResponding(null);
+      return { error: result.error };
+    }
+    await fetchNotifications();
+    setResponding(null);
+  }
+
+  async function respondGroupDeletion(notificationId: string, groupId: string, action: "accept" | "reject") {
+    setResponding(notificationId);
+    const result = await respondGroupDeletionAction(notificationId, groupId, action);
     if (result?.error) {
       setResponding(null);
       return { error: result.error };
@@ -57,5 +74,5 @@ export function useNotifications() {
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
   }
 
-  return { notifications, responding, respond, dismiss };
+  return { notifications, responding, respondInvitation, respondGroupDeletion, dismiss };
 }

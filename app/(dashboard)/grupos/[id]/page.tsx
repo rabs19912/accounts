@@ -52,6 +52,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
         },
         orderBy: { createdAt: "desc" },
       },
+      notifications: { where: { type: "GROUP_DELETE_REQUEST" } },
     },
   });
 
@@ -60,6 +61,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
   const isMember = group.members.some((m) => m.userId === userId);
   if (!isMember) notFound();
 
+  const hasPendingDeletion = group.notifications.length > 0;
   const otherMember = group.members.find((m) => m.userId !== userId)!.user;
 
   // Balance de gastos: cada uno paga la mitad del total
@@ -285,7 +287,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
         </div>
 
         <div className="border-t border-gray-200 pt-6">
-          <DeleteGroupButton groupId={group.id} />
+          <DeleteGroupButton groupId={group.id} hasPendingDeletion={hasPendingDeletion} />
         </div>
       </main>
     </div>

@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { ChevronRight } from "lucide-react";
 import { CreateGroupModal } from "@/components/groups/CreateGroupModal";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import Link from "next/link";
@@ -122,19 +123,7 @@ export default async function HomePage() {
                       {formatBalance(group.balance)}
                     </span>
                   )}
-                  <svg
-                    className="h-4 w-4 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
                 </div>
               </Link>
             ))}
