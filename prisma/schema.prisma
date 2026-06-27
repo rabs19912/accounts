@@ -43,6 +43,7 @@ model Group {
   loans         Loan[]
   notifications Notification[]
   settlements   Settlement[]
+  invitations   Invitation[]
 }
 
 model GroupMember {
@@ -144,6 +145,7 @@ model Invitation {
   createdAt DateTime         @default(now())
 
   inviter       User           @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+  group         Group?         @relation(fields: [groupId], references: [id], onDelete: Cascade)
   notifications Notification[]
 }
 

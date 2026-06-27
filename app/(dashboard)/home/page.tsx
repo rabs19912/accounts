@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ChevronRight } from "lucide-react";
 import { CreateGroupModal } from "@/components/groups/CreateGroupModal";
+import { computeNetTotals } from "@/lib/balance";
 import Link from "next/link";
 
 function getInitials(name: string) {
@@ -38,6 +39,7 @@ export default async function HomePage() {
           include: {
             members: { include: { user: { select: { id: true, name: true } } } },
             expenses: true,
+            loans: true,
           },
         },
       },
@@ -45,13 +47,18 @@ export default async function HomePage() {
   ]);
 
   const groups = memberships.map(({ group }) => {
-    const totalExpenses = group.expenses.reduce((sum, e) => sum + Number(e.price), 0);
-    const myExpenses = group.expenses
-      .filter((e) => e.userId === userId)
-      .reduce((sum, e) => sum + Number(e.price), 0);
-    const balance = myExpenses - totalExpenses / 2;
-    const otherMember = group.members.find((m) => m.userId !== userId)?.user;
-    return { ...group, totalExpenses, balance, otherMember };
+    const memberIds = group.members.map((m) => m.userId);
+    const expenseInputs = group.expenses.map((e) => ({ userId: e.userId, price: Number(e.price) }));
+    const loanInputs = group.loans.map((l) => ({
+      fromUserId: l.fromUserId,
+      toUserId: l.toUserId,
+      amount: Number(l.amount),
+    }));
+    const netTotals = computeNetTotals(memberIds, expenseInputs, loanInputs);
+    const balance = netTotals[userId] ?? 0;
+    const totalExpenses = expenseInputs.reduce((s, e) => s + e.price, 0);
+    const otherMembers = group.members.filter((m) => m.userId !== userId).map((m) => m.user);
+    return { ...group, totalExpenses, balance, otherMembers };
   });
 
   return (
@@ -87,20 +94,32 @@ export default async function HomePage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-xs font-medium text-sky-700">
                     {getInitials(session?.user?.name ?? "")}
                   </div>
-                  <div className="-ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-medium text-emerald-700">
-                    {getInitials(group.otherMember?.name ?? "?")}
-                  </div>
+                  {group.otherMembers.slice(0, 2).map((m, i) => (
+                    <div
+                      key={m.id}
+                      className={`-ml-2 flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium ${
+                        i === 0 ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {getInitials(m.name)}
+                    </div>
+                  ))}
+                  {group.otherMembers.length > 2 && (
+                    <div className="-ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600">
+                      +{group.otherMembers.length - 2}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">{group.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {group.expenses.length} gasto{group.expenses.length !== 1 ? "s" : ""}
+                    {group.members.length} miembro{group.members.length !== 1 ? "s" : ""}
                     {group.totalExpenses > 0 ? ` · ${formatBalance(group.totalExpenses)}` : ""}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {group.balance !== 0 && (
+                {Math.abs(group.balance) >= 0.01 && (
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       group.balance > 0

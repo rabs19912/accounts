@@ -66,6 +66,19 @@ export async function deleteExpenseAction(expenseId: string, groupId: string) {
   revalidatePath(`/grupos/${groupId}`);
 }
 
+export async function deleteGroupAction(groupId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "No autenticado" };
+
+  const group = await db.group.findUnique({ where: { id: groupId } });
+  if (!group) return { error: "Grupo no encontrado" };
+  if (group.createdById !== session.user.id)
+    return { error: "Solo quien creó el grupo puede eliminarlo" };
+
+  await db.group.delete({ where: { id: groupId } });
+  redirect("/home");
+}
+
 export async function requestGroupDeletionAction(groupId: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "No autenticado" };

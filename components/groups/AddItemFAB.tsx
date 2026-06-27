@@ -17,10 +17,10 @@ interface Member {
 
 interface Props {
   groupId: string;
-  otherMember: Member;
+  members: Member[]; // otros miembros (sin el usuario actual)
 }
 
-export function AddItemFAB({ groupId, otherMember }: Props) {
+export function AddItemFAB({ groupId, members }: Props) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<ItemType>("expense");
   const [error, setError] = useState<string | null>(null);
@@ -58,23 +58,24 @@ export function AddItemFAB({ groupId, otherMember }: Props) {
   const config = {
     expense: {
       title: "Agregar gasto",
-      hint: "Se divide entre los dos",
+      hint: "Se divide entre todos los miembros",
       namePlaceholder: "ej: cena, taxi, super…",
       amountLabel: "Precio",
       submitLabel: "Agregar gasto",
     },
     loan: {
       title: "Agregar préstamo",
-      hint: `Le prestás plata a ${otherMember.name}`,
+      hint: "Le prestás plata a una persona del grupo",
       namePlaceholder: "ej: efectivo, almuerzo…",
       amountLabel: "Monto",
       submitLabel: "Agregar préstamo",
     },
   }[type];
 
+  const canLoan = members.length > 0;
+
   return (
     <>
-      {/* FAB */}
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-sky-600 text-white shadow-lg transition-transform hover:scale-105 hover:bg-sky-700 active:scale-95"
@@ -83,7 +84,6 @@ export function AddItemFAB({ groupId, otherMember }: Props) {
         <Plus className="h-6 w-6" />
       </button>
 
-      {/* Modal */}
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
@@ -103,29 +103,26 @@ export function AddItemFAB({ groupId, otherMember }: Props) {
               </button>
             </div>
 
-            {/* Selector de tipo */}
             <div className="mb-5 grid grid-cols-2 gap-2">
               <TypeCard
                 selected={type === "expense"}
                 onClick={() => setType("expense")}
                 emoji="💸"
                 label="Gasto"
-                desc="Se divide entre los dos"
+                desc="Se divide entre todos"
               />
               <TypeCard
                 selected={type === "loan"}
-                onClick={() => setType("loan")}
+                onClick={() => canLoan && setType("loan")}
                 emoji="🤝"
                 label="Préstamo"
-                desc="Monto completo a devolver"
+                desc="A una persona puntual"
+                disabled={!canLoan}
               />
             </div>
 
             <form ref={formRef} action={handleSubmit}>
               <input type="hidden" name="groupId" value={groupId} />
-              {type === "loan" && (
-                <input type="hidden" name="toUserId" value={otherMember.id} />
-              )}
 
               <div className="mb-3">
                 <label className="mb-1 block text-xs text-foreground/70" htmlFor="fab-name">
@@ -139,6 +136,27 @@ export function AddItemFAB({ groupId, otherMember }: Props) {
                   autoFocus
                 />
               </div>
+
+              {type === "loan" && (
+                <div className="mb-3">
+                  <label className="mb-1 block text-xs text-foreground/70" htmlFor="fab-to">
+                    ¿A quién le prestás?
+                  </label>
+                  <select
+                    id="fab-to"
+                    name="toUserId"
+                    required
+                    className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    <option value="">Elegí una persona…</option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="mb-3">
                 <label className="mb-1 block text-xs text-foreground/70" htmlFor="fab-amount">
@@ -186,18 +204,21 @@ function TypeCard({
   emoji,
   label,
   desc,
+  disabled,
 }: {
   selected: boolean;
   onClick: () => void;
   emoji: string;
   label: string;
   desc: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-col items-center rounded-xl p-3 text-center transition-all ${
+      disabled={disabled}
+      className={`flex flex-col items-center rounded-xl p-3 text-center transition-all disabled:opacity-40 ${
         selected
           ? "border-2 border-sky-500 bg-sky-50"
           : "border border-border bg-muted/30 hover:border-border-strong"

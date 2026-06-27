@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { sendInvitationAction } from "@/app/actions/invitations";
+import { createGroupWithInvitesAction } from "@/app/actions/invitations";
 
 type User = { id: string; name: string; email: string };
-type Status = "idle" | "pending" | "success" | "error";
+type Status = "idle" | "pending" | "error";
 
 export function CreateGroupModal({
   users,
@@ -18,36 +19,32 @@ export function CreateGroupModal({
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [inviteeName, setInviteeName] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   function close() {
     setOpen(false);
     setTimeout(() => {
       setStatus("idle");
       setError(null);
-      setInviteeName(null);
-      setSelectedId("");
+      setSelectedIds([]);
     }, 300);
+  }
+
+  function toggle(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   async function handleSubmit(formData: FormData) {
     setStatus("pending");
     setError(null);
-
-    const userId = formData.get("userId") as string;
-    const selected = users.find((u) => u.id === userId);
-
-    const result = await sendInvitationAction(formData);
-
+    const result = await createGroupWithInvitesAction(formData);
+    // Si hay error, el action retorna; si todo OK, hace redirect (no vuelve)
     if (result?.error) {
       setError(result.error);
       setStatus("error");
-      return;
     }
-
-    setInviteeName(selected?.name ?? null);
-    setStatus("success");
   }
 
   if (!open) {
@@ -58,140 +55,101 @@ export function CreateGroupModal({
     );
   }
 
-  const selectedUser = users.find((u) => u.id === selectedId);
-  const suggestedName = selectedUser
-    ? `${currentUserName} & ${selectedUser.name}`
-    : "Nombre del grupo";
+  const selectedNames = users.filter((u) => selectedIds.includes(u.id)).map((u) => u.name);
+  const suggestedName =
+    selectedNames.length > 0
+      ? `${currentUserName} & ${selectedNames.join(", ")}`
+      : "Nombre del grupo";
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => e.target === e.currentTarget && close()}
     >
       <div className="w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-lg">
-        {status === "success" ? (
-          <SuccessState name={inviteeName!} onClose={close} />
-        ) : (
-          <FormState
-            users={users}
-            error={error}
-            pending={status === "pending"}
-            selectedId={selectedId}
-            onSelectUser={setSelectedId}
-            suggestedName={suggestedName}
-            hasSelection={!!selectedUser}
-            onSubmit={handleSubmit}
-            onClose={close}
-          />
-        )}
+        <h2 className="mb-1 text-base font-semibold text-foreground">Crear grupo</h2>
+        <p className="mb-5 text-sm text-muted-foreground">
+          Elegí con quién compartir gastos
+        </p>
+
+        <form action={handleSubmit}>
+          <label className="mb-1.5 block text-xs text-foreground/70">
+            Personas{" "}
+            {selectedIds.length > 0 && (
+              <span className="text-muted-foreground">({selectedIds.length})</span>
+            )}
+          </label>
+
+          {users.length === 0 ? (
+            <p className="mb-4 text-xs text-muted-foreground">
+              No hay otros usuarios registrados todavía.
+            </p>
+          ) : (
+            <div className="mb-4 max-h-48 overflow-y-auto rounded-lg border border-border">
+              {users.map((u) => {
+                const checked = selectedIds.includes(u.id);
+                return (
+                  <label
+                    key={u.id}
+                    className="flex cursor-pointer items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 hover:bg-muted/50"
+                  >
+                    <input
+                      type="checkbox"
+                      name="userIds"
+                      value={u.id}
+                      checked={checked}
+                      onChange={() => toggle(u.id)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                        checked
+                          ? "border-sky-600 bg-sky-600 text-white"
+                          : "border-input bg-background"
+                      }`}
+                    >
+                      {checked && <Check className="h-3 w-3" />}
+                    </span>
+                    <span className="text-sm text-foreground">{u.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+
+          <label className="mb-1 block text-xs text-foreground/70" htmlFor="group-name">
+            Nombre del grupo <span className="text-muted-foreground">(opcional)</span>
+          </label>
+          <Input id="group-name" name="groupName" placeholder={suggestedName} maxLength={60} />
+          {selectedIds.length > 0 && (
+            <p className="mb-4 mt-1 text-xs text-muted-foreground">
+              Si lo dejás vacío, usamos “{suggestedName}”.
+            </p>
+          )}
+          {selectedIds.length === 0 && <div className="mb-4" />}
+
+          {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={close}
+              disabled={status === "pending"}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={status === "pending" || selectedIds.length === 0}
+            >
+              {status === "pending" ? "Creando…" : "Crear grupo"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
-  );
-}
-
-function SuccessState({ name, onClose }: { name: string; onClose: () => void }) {
-  return (
-    <div className="text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-        <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
-      <h2 className="mb-1 text-base font-semibold text-foreground">Invitación enviada</h2>
-      <p className="mb-5 text-sm text-muted-foreground">
-        Le enviamos una notificación a{" "}
-        <span className="font-medium text-foreground">{name}</span>. Cuando acepte, el grupo
-        se va a crear automáticamente.
-      </p>
-      <Button size="sm" onClick={onClose} className="w-full">
-        Cerrar
-      </Button>
-    </div>
-  );
-}
-
-function FormState({
-  users,
-  error,
-  pending,
-  selectedId,
-  onSelectUser,
-  suggestedName,
-  hasSelection,
-  onSubmit,
-  onClose,
-}: {
-  users: User[];
-  error: string | null;
-  pending: boolean;
-  selectedId: string;
-  onSelectUser: (id: string) => void;
-  suggestedName: string;
-  hasSelection: boolean;
-  onSubmit: (formData: FormData) => void;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <h2 className="mb-1 text-base font-semibold text-foreground">Crear grupo</h2>
-      <p className="mb-5 text-sm text-muted-foreground">
-        Invitá a alguien para compartir gastos
-      </p>
-
-      <form action={onSubmit}>
-        <label className="mb-1 block text-xs text-foreground/70" htmlFor="user-select">
-          Seleccioná un usuario
-        </label>
-
-        {users.length === 0 ? (
-          <p className="mb-4 text-xs text-muted-foreground">
-            No hay otros usuarios registrados todavía.
-          </p>
-        ) : (
-          <select
-            id="user-select"
-            name="userId"
-            required
-            value={selectedId}
-            onChange={(e) => onSelectUser(e.target.value)}
-            className="mb-4 h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            <option value="">Elegí un usuario…</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
-        )}
-
-        <label className="mb-1 block text-xs text-foreground/70" htmlFor="group-name">
-          Nombre del grupo <span className="text-muted-foreground">(opcional)</span>
-        </label>
-        <Input
-          id="group-name"
-          name="groupName"
-          placeholder={suggestedName}
-          maxLength={60}
-        />
-        {hasSelection && (
-          <p className="mb-4 mt-1 text-xs text-muted-foreground">
-            Si lo dejás vacío, usamos “{suggestedName}”.
-          </p>
-        )}
-        {!hasSelection && <div className="mb-4" />}
-
-        {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
-
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={pending}>
-            Cancelar
-          </Button>
-          <Button type="submit" size="sm" disabled={pending || users.length === 0}>
-            {pending ? "Enviando…" : "Enviar invitación"}
-          </Button>
-        </div>
-      </form>
-    </>
   );
 }
