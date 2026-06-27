@@ -2,16 +2,24 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { sendInvitationAction } from "@/app/actions/invitations";
 
 type User = { id: string; name: string; email: string };
 type Status = "idle" | "pending" | "success" | "error";
 
-export function CreateGroupModal({ users }: { users: User[] }) {
+export function CreateGroupModal({
+  users,
+  currentUserName,
+}: {
+  users: User[];
+  currentUserName: string;
+}) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [inviteeName, setInviteeName] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState("");
 
   function close() {
     setOpen(false);
@@ -19,6 +27,7 @@ export function CreateGroupModal({ users }: { users: User[] }) {
       setStatus("idle");
       setError(null);
       setInviteeName(null);
+      setSelectedId("");
     }, 300);
   }
 
@@ -49,6 +58,11 @@ export function CreateGroupModal({ users }: { users: User[] }) {
     );
   }
 
+  const selectedUser = users.find((u) => u.id === selectedId);
+  const suggestedName = selectedUser
+    ? `${currentUserName} & ${selectedUser.name}`
+    : "Nombre del grupo";
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
@@ -62,6 +76,10 @@ export function CreateGroupModal({ users }: { users: User[] }) {
             users={users}
             error={error}
             pending={status === "pending"}
+            selectedId={selectedId}
+            onSelectUser={setSelectedId}
+            suggestedName={suggestedName}
+            hasSelection={!!selectedUser}
             onSubmit={handleSubmit}
             onClose={close}
           />
@@ -96,12 +114,20 @@ function FormState({
   users,
   error,
   pending,
+  selectedId,
+  onSelectUser,
+  suggestedName,
+  hasSelection,
   onSubmit,
   onClose,
 }: {
   users: User[];
   error: string | null;
   pending: boolean;
+  selectedId: string;
+  onSelectUser: (id: string) => void;
+  suggestedName: string;
+  hasSelection: boolean;
   onSubmit: (formData: FormData) => void;
   onClose: () => void;
 }) {
@@ -126,6 +152,8 @@ function FormState({
             id="user-select"
             name="userId"
             required
+            value={selectedId}
+            onChange={(e) => onSelectUser(e.target.value)}
             className="mb-4 h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <option value="">Elegí un usuario…</option>
@@ -136,6 +164,22 @@ function FormState({
             ))}
           </select>
         )}
+
+        <label className="mb-1 block text-xs text-foreground/70" htmlFor="group-name">
+          Nombre del grupo <span className="text-muted-foreground">(opcional)</span>
+        </label>
+        <Input
+          id="group-name"
+          name="groupName"
+          placeholder={suggestedName}
+          maxLength={60}
+        />
+        {hasSelection && (
+          <p className="mb-4 mt-1 text-xs text-muted-foreground">
+            Si lo dejás vacío, usamos “{suggestedName}”.
+          </p>
+        )}
+        {!hasSelection && <div className="mb-4" />}
 
         {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
 

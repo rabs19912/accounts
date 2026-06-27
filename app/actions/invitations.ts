@@ -10,6 +10,7 @@ export async function sendInvitationAction(formData: FormData) {
   if (!session?.user?.id) return { error: "No autenticado" };
 
   const targetUserId = formData.get("userId") as string;
+  const customName = (formData.get("groupName") as string)?.trim();
   if (!targetUserId) return { error: "Seleccioná un usuario" };
   if (targetUserId === session.user.id) return { error: "No podés invitarte a vos mismo" };
 
@@ -29,12 +30,14 @@ export async function sendInvitationAction(formData: FormData) {
   });
   if (existing) return { error: `Ya tenés una invitación pendiente para ${invitee.name}` };
 
+  const groupName = customName || `${inviter.name} & ${invitee.name}`;
+
   const invitation = await db.invitation.create({
     data: {
       token: generateToken(),
       inviterId: inviter.id,
       email: invitee.email,
-      groupName: `${inviter.name} & ${invitee.name}`,
+      groupName,
       expiresAt: getExpiresAt(24 * 7),
       notifications: {
         create: { userId: invitee.id, type: "INVITATION_RECEIVED" },
@@ -67,7 +70,8 @@ export async function respondInvitationAction(
   if (response === "accept") {
     const group = await db.group.create({
       data: {
-        name: `${invitation.inviter.name} & ${invitee.name}`,
+        name: invitation.groupName,
+        createdById: invitation.inviterId,
         members: {
           create: [{ userId: invitation.inviterId }, { userId: session.user.id }],
         },

@@ -65,7 +65,7 @@ export default async function HomePage() {
 
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-800">Tus grupos</h3>
-        <CreateGroupModal users={otherUsers} />
+        <CreateGroupModal users={otherUsers} currentUserName={session?.user?.name ?? ""} />
       </div>
 
       {groups.length === 0 ? (

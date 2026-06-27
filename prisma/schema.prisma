@@ -28,13 +28,16 @@ model User {
   notifications        Notification[]
   settlementsPaid      Settlement[]   @relation("SettlementPaidBy")
   settlementsReceived  Settlement[]   @relation("SettlementReceivedBy")
+  createdGroups        Group[]        @relation("GroupCreator")
 }
 
 model Group {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  createdById String
+  createdAt   DateTime @default(now())
 
+  creator       User           @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Cascade)
   members       GroupMember[]
   expenses      Expense[]
   loans         Loan[]

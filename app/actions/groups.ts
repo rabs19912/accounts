@@ -5,28 +5,22 @@ import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-export async function createGroupAction(formData: FormData) {
+export async function updateGroupNameAction(groupId: string, name: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "No autenticado" };
 
-  const targetUserId = formData.get("userId") as string;
-  if (!targetUserId) return { error: "Seleccioná un usuario" };
+  const trimmed = name.trim();
+  if (!trimmed) return { error: "El nombre no puede estar vacío" };
+  if (trimmed.length > 60) return { error: "El nombre es demasiado largo" };
 
-  const currentUser = await db.user.findUnique({ where: { id: session.user.id } });
-  const targetUser = await db.user.findUnique({ where: { id: targetUserId } });
+  const group = await db.group.findUnique({ where: { id: groupId } });
+  if (!group) return { error: "Grupo no encontrado" };
+  if (group.createdById !== session.user.id)
+    return { error: "Solo quien creó el grupo puede cambiar el nombre" };
 
-  if (!currentUser || !targetUser) return { error: "Usuario no encontrado" };
-
-  const group = await db.group.create({
-    data: {
-      name: `${currentUser.name} & ${targetUser.name}`,
-      members: {
-        create: [{ userId: currentUser.id }, { userId: targetUser.id }],
-      },
-    },
-  });
-
-  redirect(`/grupos/${group.id}`);
+  await db.group.update({ where: { id: groupId }, data: { name: trimmed } });
+  revalidatePath(`/grupos/${groupId}`);
+  return { success: true };
 }
 
 export async function addExpenseAction(formData: FormData) {

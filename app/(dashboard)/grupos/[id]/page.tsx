@@ -7,6 +7,7 @@ import { DeleteGroupButton } from "@/components/groups/DeleteGroupButton";
 import { AddItemFAB } from "@/components/groups/AddItemFAB";
 import { PaymentSection } from "@/components/groups/PaymentSection";
 import { SettlementHistory } from "@/components/groups/SettlementHistory";
+import { EditGroupName } from "@/components/groups/EditGroupName";
 
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -137,7 +138,13 @@ export default async function GroupPage({
   return (
     <div className="relative">
       <div className="mx-auto w-full max-w-2xl px-6 py-8 pb-24">
-        <h1 className="mb-6 text-xl font-semibold text-gray-900">{group.name}</h1>
+        <div className="mb-6">
+          <EditGroupName
+            groupId={group.id}
+            currentName={group.name}
+            canEdit={group.createdById === userId}
+          />
+        </div>
 
         {/* Tabs */}
         <div className="mb-6 flex border-b border-gray-200">
