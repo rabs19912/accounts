@@ -60,16 +60,17 @@ export async function deletePaymentAction(settlementId: string, groupId: string)
   return { success: true };
 }
 
-export async function updateMpAliasAction(formData: FormData) {
+export async function updateMpAliasAction(mpAlias: string) {
   const session = await auth();
-  if (!session?.user?.id) return;
+  if (!session?.user?.id) return { error: "No autenticado" };
 
-  const mpAlias = (formData.get("mpAlias") as string)?.trim();
+  const clean = mpAlias.trim();
 
   await db.user.update({
     where: { id: session.user.id },
-    data: { mpAlias: mpAlias || null },
+    data: { mpAlias: clean || null },
   });
 
   revalidatePath("/perfil");
+  return { success: true };
 }
