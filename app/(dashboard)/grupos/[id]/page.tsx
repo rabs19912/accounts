@@ -124,6 +124,7 @@ export default async function GroupPage({
     id: s.id,
     amount: Number(s.amount),
     createdAt: s.createdAt.toISOString(),
+    proofUrl: s.proofUrl,
     paidBy: s.paidBy,
     receivedBy: s.receivedBy,
   }));

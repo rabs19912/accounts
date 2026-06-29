@@ -91,6 +91,7 @@ model Settlement {
   paidById     String
   receivedById String
   amount       Decimal  @db.Decimal(10, 2)
+  proofUrl     String?
   createdAt    DateTime @default(now())
 
   group         Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Receipt } from "lucide-react";
 import { deletePaymentAction } from "@/app/actions/settlements";
 import { useRouter } from "next/navigation";
 
@@ -9,6 +9,7 @@ export interface PaymentRecord {
   id: string;
   amount: number;
   createdAt: string;
+  proofUrl: string | null;
   paidBy: { id: string; name: string };
   receivedBy: { id: string; name: string };
 }
@@ -80,7 +81,19 @@ export function SettlementHistory({ groupId, payments, currentUserId }: Props) {
                   {" → "}
                   <span className="font-medium">{iReceived ? "vos" : p.receivedBy.name}</span>
                 </p>
-                <p className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</p>
+                  {p.proofUrl && (
+                    <a
+                      href={p.proofUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-sky-600 hover:text-sky-800"
+                    >
+                      <Receipt className="h-3.5 w-3.5" /> Ver comprobante
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1">

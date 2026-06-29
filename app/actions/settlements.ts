@@ -9,7 +9,8 @@ import { revalidatePath } from "next/cache";
 export async function registerPaymentAction(
   groupId: string,
   toUserId: string,
-  amount: number
+  amount: number,
+  proofUrl?: string
 ) {
   const session = await auth();
   if (!session?.user?.id) return { error: "No autenticado" };
@@ -33,6 +34,7 @@ export async function registerPaymentAction(
       paidById: session.user.id,
       receivedById: toUserId,
       amount,
+      proofUrl: proofUrl ?? null,
       notifications: {
         create: { userId: toUserId, type: "PAYMENT_REGISTERED", groupId },
       },

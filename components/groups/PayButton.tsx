@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { useRef, useState } from "react";
+import { Copy, Check, Paperclip, X } from "lucide-react";
+import { upload } from "@vercel/blob/client";
 import { Button } from "@/components/ui/button";
 import { registerPaymentAction } from "@/app/actions/settlements";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,8 @@ export function PayButton({ groupId, toUserId, toName, toAlias, amount }: Props)
   const [copied, setCopied] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   async function handleCopy() {
@@ -39,15 +42,34 @@ export function PayButton({ groupId, toUserId, toName, toAlias, amount }: Props)
   async function handlePaid() {
     setPending(true);
     setError(null);
-    const result = await registerPaymentAction(groupId, toUserId, amount);
-    if (result?.error) {
-      setError(result.error);
+
+    try {
+      let proofUrl: string | undefined;
+
+      if (file) {
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const blob = await upload(`comprobantes/${crypto.randomUUID()}.${ext}`, file, {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+        });
+        proofUrl = blob.url;
+      }
+
+      const result = await registerPaymentAction(groupId, toUserId, amount, proofUrl);
+      if (result?.error) {
+        setError(result.error);
+        setPending(false);
+        return;
+      }
+
+      setOpen(false);
+      setFile(null);
       setPending(false);
-      return;
+      router.refresh();
+    } catch {
+      setError("No se pudo subir el comprobante. Intentá de nuevo.");
+      setPending(false);
     }
-    setOpen(false);
-    setPending(false);
-    router.refresh();
   }
 
   return (
@@ -96,6 +118,39 @@ export function PayButton({ groupId, toUserId, toName, toAlias, amount }: Props)
               </p>
             )}
 
+            <p className="mb-1 text-xs text-foreground/70">
+              Comprobante <span className="text-muted-foreground">(opcional)</span>
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+            {file ? (
+              <div className="mb-4 flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                <span className="truncate text-xs text-gray-700">{file.name}</span>
+                <button
+                  onClick={() => {
+                    setFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                  className="ml-2 shrink-0 text-muted-foreground hover:text-destructive"
+                  aria-label="Quitar comprobante"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border-strong px-3 py-3 text-xs text-muted-foreground hover:bg-muted/30"
+              >
+                <Paperclip className="h-4 w-4" /> Adjuntar foto
+              </button>
+            )}
+
             {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
 
             <div className="flex justify-end gap-2">
@@ -103,7 +158,7 @@ export function PayButton({ groupId, toUserId, toName, toAlias, amount }: Props)
                 Cancelar
               </Button>
               <Button size="sm" onClick={handlePaid} disabled={pending}>
-                {pending ? "Registrando…" : "✓ Ya pagué"}
+                {pending ? "Subiendo…" : "✓ Ya pagué"}
               </Button>
             </div>
           </div>
