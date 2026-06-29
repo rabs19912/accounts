@@ -6,8 +6,14 @@ import { useNotifications } from "@/hooks/useNotifications";
 import Link from "next/link";
 
 export function NotificationBell() {
-  const { notifications, responding, respondInvitation, respondGroupDeletion, dismiss } =
-    useNotifications();
+  const {
+    notifications,
+    responding,
+    respondInvitation,
+    respondGroupDeletion,
+    rejectPayment,
+    dismiss,
+  } = useNotifications();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -97,6 +103,8 @@ export function NotificationBell() {
                   {n.type === "PAYMENT_REGISTERED" && n.settlement && (
                     <PaymentRegistered
                       notification={n}
+                      onReject={rejectPayment}
+                      responding={responding}
                       onDismiss={dismiss}
                       onNavigate={() => setOpen(false)}
                     />
@@ -284,10 +292,14 @@ function GroupDeleteResult({
 
 function PaymentRegistered({
   notification: n,
+  onReject,
+  responding,
   onDismiss,
   onNavigate,
 }: {
   notification: N;
+  onReject: ReturnType<typeof useNotifications>["rejectPayment"];
+  responding: string | null;
   onDismiss: (id: string) => void;
   onNavigate: () => void;
 }) {
@@ -296,6 +308,14 @@ function PaymentRegistered({
     currency: "ARS",
     minimumFractionDigits: 2,
   }).format(Number(n.settlement!.amount));
+  const isPending = responding === n.id;
+  const proofUrl = n.settlement!.proofUrl;
+
+  function handleReject() {
+    if (!confirm("¿Marcar que NO recibiste este pago? Se borra y la deuda vuelve a quedar activa.")) return;
+    onReject(n.settlement!.id, n.groupId!, n.id);
+  }
+
   return (
     <div>
       <div className="mb-0.5 flex items-start gap-2">
@@ -311,16 +331,24 @@ function PaymentRegistered({
         </p>
       </div>
       <p className="mb-2 pl-4 text-xs text-muted-foreground">{formatRelative(n.createdAt)}</p>
-      <div className="flex gap-3 pl-4">
-        {n.groupId && (
-          <Link
-            href={`/grupos/${n.groupId}`}
-            onClick={onNavigate}
-            className="text-xs font-medium text-blue-600 hover:underline"
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pl-4">
+        {proofUrl && (
+          <a
+            href={proofUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-medium text-sky-600 hover:underline"
           >
-            Ver grupo →
-          </Link>
+            Ver comprobante
+          </a>
         )}
+        <button
+          onClick={handleReject}
+          disabled={isPending}
+          className="text-xs font-medium text-red-500 hover:underline disabled:opacity-50"
+        >
+          {isPending ? "…" : "No me pagaron"}
+        </button>
         <button onClick={() => onDismiss(n.id)} className="text-xs text-muted-foreground hover:text-foreground">
           Cerrar
         </button>

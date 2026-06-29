@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { respondInvitationAction, dismissNotificationAction } from "@/app/actions/invitations";
 import { respondGroupDeletionAction } from "@/app/actions/groups";
+import { deletePaymentAction } from "@/app/actions/settlements";
 
 export type NotificationType =
   | "INVITATION_RECEIVED"
@@ -29,6 +30,7 @@ export interface Notification {
   settlement: {
     id: string;
     amount: string;
+    proofUrl: string | null;
     paidBy: { id: string; name: string };
   } | null;
 }
@@ -87,11 +89,34 @@ export function useNotifications() {
     setResponding(null);
   }
 
+  async function rejectPayment(
+    settlementId: string,
+    groupId: string,
+    notificationId: string
+  ) {
+    setResponding(notificationId);
+    const result = await deletePaymentAction(settlementId, groupId);
+    if (result?.error) {
+      setResponding(null);
+      return { error: result.error };
+    }
+    await fetchNotifications();
+    router.refresh();
+    setResponding(null);
+  }
+
   async function dismiss(notificationId: string) {
     await dismissNotificationAction(notificationId);
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     router.refresh();
   }
 
-  return { notifications, responding, respondInvitation, respondGroupDeletion, dismiss };
+  return {
+    notifications,
+    responding,
+    respondInvitation,
+    respondGroupDeletion,
+    rejectPayment,
+    dismiss,
+  };
 }

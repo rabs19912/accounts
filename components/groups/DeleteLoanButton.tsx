@@ -28,7 +28,7 @@ export function DeleteLoanButton({
     <button
       onClick={handleDelete}
       disabled={pending}
-      className="ml-2 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 disabled:opacity-50"
+      className="ml-2 rounded p-1 text-gray-400 transition-colors hover:text-destructive disabled:opacity-50"
       aria-label="Eliminar préstamo"
     >
       <Trash2 className="h-4 w-4" />

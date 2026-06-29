@@ -104,7 +104,7 @@ export function SettlementHistory({ groupId, payments, currentUserId }: Props) {
                 <button
                   onClick={() => handleDelete(p.id)}
                   disabled={pendingId === p.id}
-                  className="ml-1 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 disabled:opacity-50"
+                  className="ml-1 rounded p-1 text-gray-400 transition-colors hover:text-destructive disabled:opacity-50"
                   aria-label="Borrar pago"
                 >
                   <Trash2 className="h-4 w-4" />
