@@ -13,6 +13,9 @@ export async function GET() {
         include: { inviter: { select: { id: true, name: true } } },
       },
       group: { select: { id: true, name: true } },
+      settlement: {
+        include: { paidBy: { select: { id: true, name: true } } },
+      },
     },
     orderBy: { createdAt: "desc" },
   });

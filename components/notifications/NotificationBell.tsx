@@ -94,6 +94,13 @@ export function NotificationBell() {
                       onDismiss={dismiss}
                     />
                   )}
+                  {n.type === "PAYMENT_REGISTERED" && n.settlement && (
+                    <PaymentRegistered
+                      notification={n}
+                      onDismiss={dismiss}
+                      onNavigate={() => setOpen(false)}
+                    />
+                  )}
                 </li>
               ))}
             </ul>
@@ -267,6 +274,53 @@ function GroupDeleteResult({
       </div>
       <p className="mb-2 pl-4 text-xs text-muted-foreground">{formatRelative(n.createdAt)}</p>
       <div className="pl-4">
+        <button onClick={() => onDismiss(n.id)} className="text-xs text-muted-foreground hover:text-foreground">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PaymentRegistered({
+  notification: n,
+  onDismiss,
+  onNavigate,
+}: {
+  notification: N;
+  onDismiss: (id: string) => void;
+  onNavigate: () => void;
+}) {
+  const amount = new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+  }).format(Number(n.settlement!.amount));
+  return (
+    <div>
+      <div className="mb-0.5 flex items-start gap-2">
+        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+        <p className="text-sm text-foreground">
+          <span className="font-medium">{n.settlement!.paidBy.name}</span> registró un pago de{" "}
+          <span className="font-medium">{amount}</span>
+          {n.group && (
+            <>
+              {" "}en <span className="font-medium">{n.group.name}</span>
+            </>
+          )}
+        </p>
+      </div>
+      <p className="mb-2 pl-4 text-xs text-muted-foreground">{formatRelative(n.createdAt)}</p>
+      <div className="flex gap-3 pl-4">
+        {n.groupId && (
+          <Link
+            href={`/grupos/${n.groupId}`}
+            onClick={onNavigate}
+            className="text-xs font-medium text-blue-600 hover:underline"
+          >
+            Ver grupo →
+          </Link>
+        )}
         <button onClick={() => onDismiss(n.id)} className="text-xs text-muted-foreground hover:text-foreground">
           Cerrar
         </button>

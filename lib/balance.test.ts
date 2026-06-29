@@ -8,6 +8,11 @@ const loan = (fromUserId: string, toUserId: string, amount: number) => ({
   toUserId,
   amount,
 });
+const payment = (paidById: string, receivedById: string, amount: number) => ({
+  paidById,
+  receivedById,
+  amount,
+});
 
 // suma de un objeto de netos, redondeada (para el invariante de suma-cero)
 const sumValues = (obj: Record<string, number>) =>
@@ -108,6 +113,28 @@ describe("computeMyBalances — deudas por pares neteadas", () => {
       { userId: "C", amount: 33.33 },
     ]);
   });
+
+  it("un pago salda la deuda de ese par sin tocar a los demás", () => {
+    const members = ["A", "B", "C"];
+    const expenses = [expense("A", 90)]; // B y C le deben 30 a A
+    const payments = [payment("B", "A", 30)]; // B le paga 30 a A
+
+    // Desde A: B saldado (0), C todavía le debe 30
+    expect(computeMyBalances("A", members, expenses, [], payments)).toEqual([
+      { userId: "B", amount: 0 },
+      { userId: "C", amount: 30 },
+    ]);
+  });
+
+  it("un pago parcial deja el saldo restante", () => {
+    const members = ["A", "B"];
+    const expenses = [expense("A", 100)]; // B le debe 50 a A
+    const payments = [payment("B", "A", 20)]; // B paga 20
+
+    expect(computeMyBalances("B", members, expenses, [], payments)).toEqual([
+      { userId: "A", amount: -30 }, // todavía debe 30
+    ]);
+  });
 });
 
 describe("computeNetTotals — balance neto global por persona", () => {
@@ -141,5 +168,15 @@ describe("computeNetTotals — balance neto global por persona", () => {
   it("grupo sin movimientos: todos en 0", () => {
     const members = ["A", "B", "C"];
     expect(computeNetTotals(members, [], [])).toEqual({ A: 0, B: 0, C: 0 });
+  });
+
+  it("un pago netea el balance neto global y mantiene suma cero", () => {
+    const members = ["A", "B"];
+    const expenses = [expense("A", 100)]; // A +50, B -50
+    const payments = [payment("B", "A", 50)]; // B salda → ambos en 0
+    const net = computeNetTotals(members, expenses, [], payments);
+
+    expect(net).toEqual({ A: 0, B: 0 });
+    expect(sumValues(net)).toBe(0);
   });
 });

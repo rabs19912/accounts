@@ -17,6 +17,13 @@ export interface LoanInput {
   amount: number;
 }
 
+// Un pago: paidById le pagó a receivedById (netea esa deuda).
+export interface SettlementInput {
+  paidById: string;
+  receivedById: string;
+  amount: number;
+}
+
 export interface BalanceEntry {
   userId: string;
   // > 0: esa persona TE debe · < 0: vos le debés a esa persona
@@ -27,7 +34,8 @@ export interface BalanceEntry {
 function buildDebtMatrix(
   memberIds: string[],
   expenses: ExpenseInput[],
-  loans: LoanInput[]
+  loans: LoanInput[],
+  settlements: SettlementInput[]
 ): Record<string, Record<string, number>> {
   const debt: Record<string, Record<string, number>> = {};
 
@@ -51,6 +59,11 @@ function buildDebtMatrix(
     add(l.toUserId, l.fromUserId, l.amount);
   }
 
+  // Un pago de P a R reduce lo que P le debe a R.
+  for (const s of settlements) {
+    add(s.paidById, s.receivedById, -s.amount);
+  }
+
   return debt;
 }
 
@@ -59,9 +72,10 @@ export function computeMyBalances(
   myId: string,
   memberIds: string[],
   expenses: ExpenseInput[],
-  loans: LoanInput[]
+  loans: LoanInput[],
+  settlements: SettlementInput[] = []
 ): BalanceEntry[] {
-  const debt = buildDebtMatrix(memberIds, expenses, loans);
+  const debt = buildDebtMatrix(memberIds, expenses, loans, settlements);
 
   return memberIds
     .filter((id) => id !== myId)
@@ -77,7 +91,8 @@ export function computeMyBalances(
 export function computeNetTotals(
   memberIds: string[],
   expenses: ExpenseInput[],
-  loans: LoanInput[]
+  loans: LoanInput[],
+  settlements: SettlementInput[] = []
 ): Record<string, number> {
   const totals: Record<string, number> = {};
   for (const id of memberIds) totals[id] = 0;
@@ -97,6 +112,12 @@ export function computeNetTotals(
   for (const l of loans) {
     if (totals[l.fromUserId] !== undefined) totals[l.fromUserId] += l.amount;
     if (totals[l.toUserId] !== undefined) totals[l.toUserId] -= l.amount;
+  }
+
+  // El que paga sube su balance (salda deuda); el que cobra baja.
+  for (const s of settlements) {
+    if (totals[s.paidById] !== undefined) totals[s.paidById] += s.amount;
+    if (totals[s.receivedById] !== undefined) totals[s.receivedById] -= s.amount;
   }
 
   for (const id of memberIds) totals[id] = round2(totals[id]);

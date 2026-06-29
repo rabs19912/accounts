@@ -11,7 +11,8 @@ export type NotificationType =
   | "INVITATION_REJECTED"
   | "GROUP_DELETE_REQUEST"
   | "GROUP_DELETE_ACCEPTED"
-  | "GROUP_DELETE_REJECTED";
+  | "GROUP_DELETE_REJECTED"
+  | "PAYMENT_REGISTERED";
 
 export interface Notification {
   id: string;
@@ -25,6 +26,11 @@ export interface Notification {
     inviter: { id: string; name: string };
   } | null;
   group: { id: string; name: string } | null;
+  settlement: {
+    id: string;
+    amount: string;
+    paidBy: { id: string; name: string };
+  } | null;
 }
 
 const POLL_INTERVAL = 15_000;
